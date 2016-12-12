@@ -54,6 +54,7 @@
 #define SUPERKICK_MAX            20
 
 Arduboy2Base arduboy;
+Sprites sprites;
 ArduboyTones sound(arduboy.audio.enabled);
 
 unsigned char gameState = STATE_MENU_MAIN;
@@ -88,7 +89,8 @@ void setup()
 {
   arduboy.begin();
   arduboy.setFrameRate(30);
-  arduboy.drawBitmap(0, 8, TEAMarg2, 128, 48, 1);
+  arduboy.clear();
+  sprites.drawSelfMasked(34, 4, T_arg, 0);
   arduboy.display();
   delay(3000);
   gameState = STATE_MENU_MAIN;
