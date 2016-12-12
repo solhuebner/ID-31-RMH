@@ -1,7 +1,7 @@
 /*
  REVERSE MARMAID HOCKEY: http://www.team-arg.org/rmh-manual.html
 
- Arduboy version 1.3 : http://www.team-arg.org/rmh-downloads.html
+ Arduboy version 1.4 : http://www.team-arg.org/rmh-downloads.html
  
  MADE by TEAM a.r.g. : http://www.team-arg.org/more-about.html
 
@@ -15,10 +15,8 @@
 //determine the game
 #define GAME_ID 31
 
-#include <SPI.h>
-#include <EEPROM.h>
-#include "Arglib.h"
-#include "physics.h"
+#include <Arduboy2.h>
+#include <ArduboyTones.h>
 #include "rm_bitmaps.h"
 #include "GO_bitmaps.h"
 #include "menu_bitmaps.h"
@@ -54,12 +52,11 @@
 #define WALL_TONE                80
 #define FACE_TONE                50
 #define SUPERKICK_MAX            20
-Arduboy arduboy;
-Physics physics;
-SimpleButtons buttons (arduboy);
+
+Arduboy2Base arduboy;
+ArduboyTones sound(arduboy.audio.enabled);
 
 unsigned char gameState = STATE_MENU_MAIN;
-boolean soundYesNo;
 int menuSelection;
 
 byte ballState = 0;
@@ -89,13 +86,12 @@ GameObject player, AI, ball;
 
 void setup()
 {
-  arduboy.start();
+  arduboy.begin();
   arduboy.setFrameRate(30);
   arduboy.drawBitmap(0, 8, TEAMarg2, 128, 48, 1);
   arduboy.display();
   delay(3000);
   gameState = STATE_MENU_MAIN;
-  if (EEPROM.read(EEPROM_AUDIO_ON_OFF)) soundYesNo = true;
   arduboy.initRandomSeed();
   menuSelection = CHOOSE_PLAY;
 }
@@ -105,48 +101,46 @@ void loop()
 {
   // pause render until it's time for the next frame
   if (!(arduboy.nextFrame())) return;
-  buttons.poll();
+  arduboy.pollButtons();
   switch (gameState)
   {
     case STATE_MENU_MAIN:
       // show the splash art
-      arduboy.clearDisplay();
+      arduboy.clear();
       arduboy.drawBitmap(0, 0, title_bitmap, 128, 56, WHITE);
       arduboy.drawBitmap(22, 56, mainmenu_bitmaps[menuSelection - 1], 83, 8, WHITE);
-      if (buttons.justPressed(RIGHT_BUTTON) && (menuSelection < 4))menuSelection++;
-      if (buttons.justPressed(LEFT_BUTTON) && (menuSelection > 1))menuSelection--;
-      if (buttons.justPressed(A_BUTTON | B_BUTTON)) gameState = menuSelection;
+      if (arduboy.justPressed(RIGHT_BUTTON) && (menuSelection < 4))menuSelection++;
+      if (arduboy.justPressed(LEFT_BUTTON) && (menuSelection > 1))menuSelection--;
+      if (arduboy.justPressed(A_BUTTON | B_BUTTON)) gameState = menuSelection;
       break;
     case STATE_MENU_HELP: // QR code
-      arduboy.clearDisplay();
+      arduboy.clear();
       arduboy.drawBitmap(32, 0, qrcode_bitmap, 64, 64, 1);
-      if (buttons.justPressed(A_BUTTON | B_BUTTON)) gameState = STATE_MENU_MAIN;
+      if (arduboy.justPressed(A_BUTTON | B_BUTTON)) gameState = STATE_MENU_MAIN;
       break;
     case STATE_MENU_INFO: // infoscreen
-      arduboy.clearDisplay();
+      arduboy.clear();
       arduboy.drawBitmap(14, 4, info_bitmap, 100, 56, 1);
-      if (buttons.justPressed(A_BUTTON | B_BUTTON)) gameState = STATE_MENU_MAIN;
+      if (arduboy.justPressed(A_BUTTON | B_BUTTON)) gameState = STATE_MENU_MAIN;
       break;
     case STATE_MENU_SOUNDFX: // soundconfig screen
-      arduboy.clearDisplay();
+      arduboy.clear();
       arduboy.drawBitmap(0, 0, title_bitmap, 128, 56, WHITE);
-      arduboy.drawBitmap(27, 56, soundYesNo_bitmaps[soundYesNo], 73, 8, 1);
-      if (buttons.justPressed(RIGHT_BUTTON)) soundYesNo = true;
-      if (buttons.justPressed(LEFT_BUTTON)) soundYesNo = false;
-      if (buttons.justPressed(A_BUTTON | B_BUTTON))
+      arduboy.drawBitmap(27, 56, soundYesNo_bitmaps[arduboy.audio.enabled()], 73, 8, 1);
+      if (arduboy.justPressed(RIGHT_BUTTON)) arduboy.audio.on();
+      if (arduboy.justPressed(LEFT_BUTTON)) arduboy.audio.off();
+      if (arduboy.justPressed(A_BUTTON | B_BUTTON))
       {
-        arduboy.audio.save_on_off();
+        arduboy.audio.saveOnOff();
         gameState = STATE_MENU_MAIN;
       }
-      if (soundYesNo == true) arduboy.audio.on();
-      else arduboy.audio.off();
       break;
     case STATE_GAME_INIT:
-      arduboy.clearDisplay();
+      arduboy.clear();
       amountOfWins();
-      if (buttons.justPressed(RIGHT_BUTTON | UP_BUTTON) && (howManyWins < 7))howManyWins++;
-      if (buttons.justPressed(LEFT_BUTTON | DOWN_BUTTON) && (howManyWins > 1))howManyWins--;
-      if (buttons.justPressed(B_BUTTON))
+      if (arduboy.justPressed(RIGHT_BUTTON | UP_BUTTON) && (howManyWins < 7))howManyWins++;
+      if (arduboy.justPressed(LEFT_BUTTON | DOWN_BUTTON) && (howManyWins > 1))howManyWins--;
+      if (arduboy.justPressed(B_BUTTON))
       {
         playerScore = 0;
         AIScore = 0;
@@ -157,7 +151,7 @@ void loop()
 
       break;
     case STATE_GAME_PLAYING:
-      arduboy.clearDisplay();
+      arduboy.clear();
       updateStage();
       if (arduboy.everyXFrames(2))
       {
@@ -171,21 +165,21 @@ void loop()
           }
         }
       }
-      if (buttons.pressed(RIGHT_BUTTON) & player.x < 20) player.x += player.xSpeed;
-      if (buttons.pressed(LEFT_BUTTON) & player.x > 4) player.x -= player.xSpeed;
-      if (buttons.pressed(UP_BUTTON) & player.y > 4) player.y -= player.ySpeed;
-      if (buttons.pressed(DOWN_BUTTON) & player.y + 24 < HEIGHT - 4) player.y += player.ySpeed;
-      if (buttons.justPressed(B_BUTTON))ballMoves = true;
+      if (arduboy.pressed(RIGHT_BUTTON) && (player.x < 20)) player.x += player.xSpeed;
+      if (arduboy.pressed(LEFT_BUTTON) && (player.x > 4)) player.x -= player.xSpeed;
+      if (arduboy.pressed(UP_BUTTON) && (player.y > 4)) player.y -= player.ySpeed;
+      if (arduboy.pressed(DOWN_BUTTON) && (player.y + 24 < HEIGHT - 4)) player.y += player.ySpeed;
+      if (arduboy.justPressed(B_BUTTON))ballMoves = true;
 
 
-      if (buttons.justPressed(A_BUTTON))
+      if (arduboy.justPressed(A_BUTTON))
       {
-        arduboy.clearDisplay();
+        arduboy.clear();
         gameState = STATE_GAME_PAUSE;
       }
       break;
     case STATE_GAME_OVER:
-      arduboy.clearDisplay();
+      arduboy.clear();
       if (AIScore == scoreMax)
       {
         arduboy.drawBitmap(0, 0, fishstick_bitmap, 128, 64, WHITE);
@@ -205,15 +199,15 @@ void loop()
             break;
         }
       }
-      if (buttons.justPressed(A_BUTTON | B_BUTTON))
+      if (arduboy.justPressed(A_BUTTON | B_BUTTON))
       {
-        arduboy.clearDisplay();
+        arduboy.clear();
         gameState = STATE_MENU_MAIN;
       }
       break;
     case STATE_GAME_PAUSE:
       arduboy.drawBitmap(0, 0, pause_bitmap, 128, 64, WHITE);
-      if (buttons.justPressed(A_BUTTON))
+      if (arduboy.justPressed(A_BUTTON))
       {
 
         //afterPause();
@@ -308,9 +302,9 @@ void AI_Logic() {
 
 void checkAnimations()
 {
-  if (playerAnimateTimer > 0 & playerState != NORMAL_POSTURE) playerAnimateTimer --;
+  if ((playerAnimateTimer > 0) && (playerState != NORMAL_POSTURE)) playerAnimateTimer --;
   else playerState = NORMAL_POSTURE;
-  if (AiAnimateTimer > 0 & AIstate != NORMAL_POSTURE) AiAnimateTimer --;
+  if ((AiAnimateTimer > 0) && (AIstate != NORMAL_POSTURE)) AiAnimateTimer --;
   else AIstate = NORMAL_POSTURE;
   
   arduboy.drawBitmap(player.x, player.y, player_bitmaps[playerState], 16, 24, WHITE);
@@ -325,7 +319,7 @@ void superKickMeterAdd(byte amnt_)
 
 void superKick()
 {
-  if (buttons.justPressed(B_BUTTON))
+  if (arduboy.justPressed(B_BUTTON))
   {
 
     if (superKickMeter == SUPERKICK_MAX)
@@ -343,7 +337,7 @@ void checkSuperKickCollisions()
 
   rect.x = player.x + player.width; rect.y = player.y + player.height / 2; rect.width = 20; rect.height = player.height / 2;
 
-  if (physics.collide(point, rect)) {
+  if (arduboy.collide(point, rect)) {
     superKickMeter = 0;
     ball.xSpeed = 10;
     ball.ySpeed = 0;
@@ -358,13 +352,13 @@ void checkCollisions()
 
   //check if ball hit player
   rect.x = player.x; rect.y = player.y; rect.width = 16; rect.height = 24;
-  if (physics.collide(point, rect)) {
-    if (point.y < rect.y + 24 & point.y > rect.y + 24 - 10) { // if ball is on the bottom side
+  if (arduboy.collide(point, rect)) {
+    if ((point.y < rect.y + 24) && (point.y > rect.y + 24 - 10)) { // if ball is on the bottom side
       //change state to kicking
       playerState = KICKING_POSTURE;
       playerAnimateTimer = 10;
       superKickMeterAdd(10);
-      arduboy.tunes.tone(KICK_TONE, 100);
+      sound.tone(KICK_TONE, 100);
       if (ball.xSpeed < 0) ball.xSpeed --; //if ball is going left speed up ball
 
       if (ball.ySpeed < 0) // if ball is going up
@@ -374,7 +368,7 @@ void checkCollisions()
 
     if (point.y < rect.y + 8) { // if ball is on the top side
       //change state to hitInTheFace
-      arduboy.tunes.tone(FACE_TONE, 100);
+      sound.tone(FACE_TONE, 100);
       playerState = HIT_IN_FACE_POSTURE;
       playerAnimateTimer = 15;
       if (ball.ySpeed > 0) // if ball is going down
@@ -399,7 +393,7 @@ void checkCollisions()
 
   //check if ball hit AI
   rect.x = AI.x; rect.y = AI.y; rect.width = 16; rect.height = 24;
-  if (physics.collide(point, rect)) {
+  if (arduboy.collide(point, rect)) {
     if (isSuperkicking) {
       isSuperkicking = false;
 
@@ -411,7 +405,7 @@ void checkCollisions()
     if (point.y < rect.y + 20) { // if ball is on the bottom side
       //change state to kicking
       AIstate = KICKING_POSTURE;
-      arduboy.tunes.tone(KICK_TONE, 100);
+      sound.tone(KICK_TONE, 100);
       if (ball.xSpeed > 0) ball.xSpeed ++ ; //if ball is going right speed up ball
       if (ball.ySpeed < 0) // if ball is going up
         ball.ySpeed *= -1;  //revers the y speed
@@ -420,7 +414,7 @@ void checkCollisions()
 
     if (point.y < rect.y + 4) { // if ball is on the top side
       //change state to hitInTheFace
-      arduboy.tunes.tone(FACE_TONE, 100);
+      sound.tone(FACE_TONE, 100);
       AIstate = HIT_IN_FACE_POSTURE;
       if (ball.ySpeed > 0) // if ball is going down
         ball.ySpeed *= -1;  //revers the y speed
@@ -450,35 +444,35 @@ void checkIfScored() {
 
   //check upper right corner
   rect.x = 0; rect.y = 0; rect.width = goalSize; rect.height = goalSize;
-  if (physics.collide(point, rect))
+  if (arduboy.collide(point, rect))
   {
-    arduboy.tunes.tone(SCORE_TONE, 100);
+    sound.tone(SCORE_TONE, 100);
     AIScore ++;
     setupGame();
   }
   //check lower right corner
   rect.x = 0; rect.y = HEIGHT - goalSize; rect.width = goalSize; rect.height = goalSize;
-  if (physics.collide(point, rect))
+  if (arduboy.collide(point, rect))
   {
-    arduboy.tunes.tone(SCORE_TONE, 100);
+    sound.tone(SCORE_TONE, 100);
     AIScore ++;
     setupGame();
   }
 
   //check upper left corner
   rect.x = WIDTH - goalSize; rect.y = 0; rect.width = goalSize; rect.height = goalSize;
-  if (physics.collide(point, rect))
+  if (arduboy.collide(point, rect))
   {
-    arduboy.tunes.tone(SCORE_TONE, 100);
+    sound.tone(SCORE_TONE, 100);
     playerScore ++;
     setupGame();
   }
 
   //check lower left corner
   rect.x = WIDTH - goalSize; rect.y = HEIGHT - goalSize; rect.width = goalSize; rect.height = goalSize;
-  if (physics.collide(point, rect))
+  if (arduboy.collide(point, rect))
   {
-    arduboy.tunes.tone(SCORE_TONE, 100);
+    sound.tone(SCORE_TONE, 100);
     playerScore ++;
     setupGame();
   }
@@ -512,14 +506,14 @@ void moveBall()
     //IF BALL HITS LEFT WALL
     if (ball.x < 4)
     {
-      arduboy.tunes.tone(WALL_TONE, 100);
+      sound.tone(WALL_TONE, 100);
       ball.x = oldX;
       ball.xSpeed *= -1;
     }
     //IF BALL HITS RIGHT WALL
     if (ball.x + ball.width > WIDTH - 4 )
     {
-      arduboy.tunes.tone(WALL_TONE, 100);
+      sound.tone(WALL_TONE, 100);
       ball.x = oldX;
       if (!isSuperkicking) {
         ball.xSpeed *= -1;
@@ -533,14 +527,14 @@ void moveBall()
     //IF BALL HITS TOP WALL
     if (ball.y < 4)
     {
-      arduboy.tunes.tone(WALL_TONE, 100);
+      sound.tone(WALL_TONE, 100);
       ball.y = oldY;
       ball.ySpeed *= -1;
     }
     //IF BALL HITS BOTTOM WALL
     if (ball.y + ball.height > HEIGHT )
     {
-      arduboy.tunes.tone(WALL_TONE, 100);
+      sound.tone(WALL_TONE, 100);
       ball.y = oldY;
       ball.ySpeed *= -1;
     }
