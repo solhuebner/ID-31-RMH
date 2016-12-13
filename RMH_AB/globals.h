@@ -5,8 +5,6 @@
 #include <Arduboy2.h>
 #include <ArduboyTones.h>
 #include "bitmaps.h"
-#include "rm_bitmaps.h"
-#include "GO_bitmaps.h"
 
 //define menu states (on main menu)
 #define STATE_MENU_INTRO             0

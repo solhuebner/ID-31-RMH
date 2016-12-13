@@ -73,9 +73,9 @@ void checkAnimations()
   else playerState = NORMAL_POSTURE;
   if ((AiAnimateTimer > 0) && (AIstate != NORMAL_POSTURE)) AiAnimateTimer --;
   else AIstate = NORMAL_POSTURE;
-  
-  arduboy.drawBitmap(player.x, player.y, player_bitmaps[playerState], 16, 24, WHITE);
-  arduboy.drawBitmap(AI.x, AI.y, AI_bitmaps[AIstate], 16, 24, WHITE);
+
+  sprites.drawSelfMasked(player.x, player.y, playerSprites, playerState);
+  sprites.drawSelfMasked(AI.x, AI.y, playerSprites, AIstate + 3);
 }
 
 void superKickMeterAdd(byte amnt_)
@@ -278,8 +278,8 @@ void checkIfScored() {
 
 void drawScores()
 {
-  //arduboy.drawBitmap(48, 54, number_bitmaps[playerScore], 6, 8, WHITE);
-  //arduboy.drawBitmap(75, 54, number_bitmaps[AIScore], 6, 8, WHITE);
+  sprites.drawSelfMasked(48, 54, numbers, playerScore);
+  sprites.drawSelfMasked(75, 54, numbers, AIScore);
 }
 
 
@@ -289,7 +289,7 @@ void drawBall() {
     currentBallFrame ++;
     if (currentBallFrame > 3) currentBallFrame = 0;
   }
-  arduboy.drawBitmap(ball.x, ball.y, shrimp_bitmaps[currentBallFrame], 8, 8, WHITE);
+  sprites.drawSelfMasked(ball.x, ball.y, shrimp, currentBallFrame);
 }
 
 void moveBall()
@@ -362,20 +362,5 @@ void drawPlayArea() {
   arduboy.fillCircle(WIDTH, 0, 12, WHITE);
 }
 
-
-
-void updateStage()
-{
-  moveBall();
-  AI_Logic();
-  superKick();
-  checkIfScored();
-  checkCollisions();
-  drawPlayArea();
-  drawScores();
-  checkAnimations();
-  drawBall();
-  checkWinLose();
-}
 
 #endif
