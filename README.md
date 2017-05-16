@@ -1,4 +1,4 @@
-#Reverse Mermaid Hockey  
+# Reverse Mermaid Hockey  
 ![Image](http://www.team-arg.org/masterfiles/team-arg-rmh/images/banner-ID-31.png)
 
 Reverse Mermaid Hockey : http://www.team-arg.org/rmh-manual.html  
