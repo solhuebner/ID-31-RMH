@@ -1,6 +1,5 @@
-#Reverse Mermaid Hockey
-![Image]
-(http://www.team-arg.org/masterfiles/team-arg-rmh/images/banner-ID-31.png)
+#Reverse Mermaid Hockey  
+![Image](http://www.team-arg.org/masterfiles/team-arg-rmh/images/banner-ID-31.png)
 
 Reverse Mermaid Hockey : http://www.team-arg.org/rmh-manual.html  
 **Download latest Arduboy version and source :** https://github.com/TEAMarg/ID-31-RMH/releases/latest  
